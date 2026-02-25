@@ -220,19 +220,15 @@
 
           await pyodide.runPythonAsync(`
           import micropip
-          # Adjust this URL to your local path or a hosted URL
-          # await micropip.install("http://localhost:8890/dist/slurm_script_generator-0.3.2-py3-none-any.whl")
-          
-          # For github pages
-          const wheelUrl = window.location.origin + window.location.pathname.replace('index.html', '') + "dist/slurm_script_generator-0.3.2-py3-none-any.whl";
-          await micropip.install(wheelUrl);
-          
           import inspect
           import json
+          
+          # Install slurm-script-generator
+          await micropip.install("slurm-script-generator")
+          
           from slurm_script_generator import pragmas
           from slurm_script_generator.pragmas import Pragma
 
-          # Extract metadata from all Pragma classes
           meta = {}
           for name, obj in inspect.getmembers(pragmas):
               if inspect.isclass(obj) and issubclass(obj, Pragma) and obj is not Pragma:
@@ -246,20 +242,20 @@
                       "is_bool": getattr(obj, "action", "") == "store_true"
                   })
           
-          # Sort the types based on your PragmaTypes literal order if possible
-          # For now, we return as JSON
-          json.dumps(meta)
+          # Store result for JS to pick up
+          global_meta = json.dumps(meta)
         `);
 
-          const pragmaMeta = JSON.parse(pyodide.runPython("json.dumps(meta)"));
+          // Retrieve the metadata from Python
+          const pragmaMeta = JSON.parse(pyodide.globals.get("global_meta"));
           renderForm(pragmaMeta);
 
           loadOverlay.style.display = "none";
           runBtn.disabled = false;
         } catch (err) {
-          document.getElementById("load-msg").textContent =
-            "Error: " + err.message;
-          console.error(err);
+          document.getElementById("load-msg").innerHTML = 
+            `<div style="color: #ef4444;">Failed to load from PyPI</div>
+            <div style="font-size: 0.8rem;">${err.message}</div>`;
         }
       }
 
