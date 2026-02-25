@@ -253,10 +253,9 @@
           loadOverlay.style.display = "none";
           runBtn.disabled = false;
         } catch (err) {
-          document.getElementById("load-msg").innerHTML =
-            `<div style="color: #ef4444;">Initialization Failed</div>
-          <div style="font-size: 0.8rem; margin-top: 10px;">${err.message}</div>`;
-          console.error(err);
+          document.getElementById("load-msg").innerHTML = 
+            `<div style="color: #ef4444;">Failed to load from PyPI</div>
+            <div style="font-size: 0.8rem;">${err.message}</div>`;
         }
       }
 
