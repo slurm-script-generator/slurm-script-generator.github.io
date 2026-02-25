@@ -146,6 +146,34 @@
         flex: 1;
       }
 
+      /* Container for the output area to handle button positioning */
+      #copy-btn {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        padding: 0.5rem 1rem;
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        backdrop-filter: blur(4px);
+      }
+
+      #copy-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: var(--primary);
+      }
+
+      #copy-btn.success {
+        background: #22c55e;
+        border-color: #22c55e;
+        color: white;
+      }
+
       #controls {
         position: sticky;
         bottom: 2rem;
@@ -229,6 +257,7 @@
       <div id="resizer"></div>
 
       <section id="output-side">
+        <button id="copy-btn">Copy Script</button>
         <pre id="output"># Your generated script will appear here...</pre>
         <div id="controls">
           <button id="run-btn" disabled>Generate Script</button>
@@ -419,6 +448,33 @@ script_obj.generate_script(include_header=True)
         document.removeEventListener("mousemove", handleMouseMove);
         document.removeEventListener("mouseup", stopResizing);
       }
+
+      // Button to copy output to clipboard
+      const copyBtn = document.getElementById("copy-btn");
+
+      copyBtn.onclick = async () => {
+        const content = output.textContent;
+
+        // Don't copy the placeholder text
+        if (content.startsWith("# Your generated script")) return;
+
+        try {
+          await navigator.clipboard.writeText(content);
+
+          // Visual feedback
+          const originalText = copyBtn.innerText;
+          copyBtn.innerText = "✓ Copied!";
+          copyBtn.classList.add("success");
+
+          setTimeout(() => {
+            copyBtn.innerText = originalText;
+            copyBtn.classList.remove("success");
+          }, 2000);
+        } catch (err) {
+          console.error("Failed to copy!", err);
+          alert("Failed to copy to clipboard.");
+        }
+      };
 
       init();
     </script>
