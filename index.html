@@ -221,7 +221,11 @@
           await pyodide.runPythonAsync(`
           import micropip
           # Adjust this URL to your local path or a hosted URL
-          await micropip.install("http://localhost:8890/dist/slurm_script_generator-0.3.2-py3-none-any.whl")
+          # await micropip.install("http://localhost:8890/dist/slurm_script_generator-0.3.2-py3-none-any.whl")
+          
+          # For github pages
+          const wheelUrl = window.location.origin + window.location.pathname.replace('index.html', '') + "dist/slurm_script_generator-0.3.2-py3-none-any.whl";
+          await micropip.install(wheelUrl);
           
           import inspect
           import json
