@@ -1,0 +1,351 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>SLURM Generator Pro</title>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+    <style>
+      :root {
+        --primary: #4f8cff;
+        --bg: #f8fafc;
+        --card-bg: #ffffff;
+        --border: #e2e8f0;
+        --text: #0f172a;
+      }
+      body {
+        font-family: "Inter", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+      }
+
+      header {
+        background: white;
+        padding: 1rem 2rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      h1 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: var(--primary);
+      }
+
+      main {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0;
+        flex: 1;
+        overflow: hidden;
+      }
+
+      /* Left Side: Inputs */
+      #input-side {
+        padding: 2rem;
+        overflow-y: auto;
+        border-right: 1px solid var(--border);
+      }
+      .category-section {
+        margin-bottom: 2rem;
+      }
+      .category-title {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #64748b;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+      }
+      .grid-inputs {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+      .field label {
+        font-size: 0.85rem;
+        font-weight: 500;
+      }
+      .field input,
+      .field textarea {
+        padding: 0.5rem;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 0.9rem;
+      }
+      .field input:focus {
+        outline: 2px solid var(--primary);
+        border-color: transparent;
+      }
+
+      .full-width {
+        grid-column: 1 / -1;
+      }
+      textarea {
+        min-height: 80px;
+        font-family: monospace;
+        resize: vertical;
+      }
+
+      /* Right Side: Output */
+      #output-side {
+        background: #0f172a;
+        padding: 2rem;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+      }
+      #output {
+        color: #e2e8f0;
+        font-family: "Fira Code", "Consolas", monospace;
+        font-size: 0.95rem;
+        white-space: pre-wrap;
+        margin: 0;
+        flex: 1;
+      }
+
+      #controls {
+        position: sticky;
+        bottom: 2rem;
+        display: flex;
+        justify-content: center;
+        width: 100%;
+        pointer-events: none;
+      }
+      #run-btn {
+        pointer-events: auto;
+        padding: 0.75rem 2.5rem;
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 99px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 10px 15px -3px rgba(79, 140, 255, 0.4);
+        transition: transform 0.2s;
+      }
+      #run-btn:hover {
+        transform: translateY(-2px);
+        background: #3b82f6;
+      }
+      #run-btn:disabled {
+        background: #94a3b8;
+        cursor: not-allowed;
+      }
+
+      #loading-overlay {
+        position: fixed;
+        inset: 0;
+        background: white;
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="loading-overlay">
+      <h2 id="load-msg">Initializing Environment...</h2>
+    </div>
+
+    <header>
+      <h1>SLURM SCRIPT GENERATOR</h1>
+      <span id="version-tag" style="font-size: 0.8rem; color: #64748b"
+        >v0.3.2</span
+      >
+    </header>
+
+    <main>
+      <section id="input-side">
+        <div id="dynamic-form"></div>
+
+        <div class="category-section">
+          <div class="category-title">Execution & Scripts</div>
+          <div class="grid-inputs">
+            <div class="field full-width">
+              <label>Modules to Load <small>(One per line)</small></label>
+              <textarea
+                id="modules"
+                class="slurm-list"
+                placeholder="gcc/11.2.0&#10;openmpi/4.1.2"
+              ></textarea>
+            </div>
+            <div class="field full-width">
+              <label>Custom Commands <small>(One per line)</small></label>
+              <textarea
+                id="custom_commands"
+                class="slurm-list"
+                placeholder="# Run simulation&#10;srun ./my_binary"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="output-side">
+        <pre id="output"># Your generated script will appear here...</pre>
+        <div id="controls">
+          <button id="run-btn" disabled>Generate Script</button>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const output = document.getElementById("output");
+      const runBtn = document.getElementById("run-btn");
+      const loadOverlay = document.getElementById("loading-overlay");
+      const formEl = document.getElementById("dynamic-form");
+
+      let pyodide = null;
+
+      async function init() {
+        try {
+          pyodide = await loadPyodide();
+          await pyodide.loadPackage("micropip");
+
+          await pyodide.runPythonAsync(`
+          import micropip
+          # Adjust this URL to your local path or a hosted URL
+          await micropip.install("http://localhost:8890/dist/slurm_script_generator-0.3.2-py3-none-any.whl")
+          
+          import inspect
+          import json
+          from slurm_script_generator import pragmas
+          from slurm_script_generator.pragmas import Pragma
+
+          # Extract metadata from all Pragma classes
+          meta = {}
+          for name, obj in inspect.getmembers(pragmas):
+              if inspect.isclass(obj) and issubclass(obj, Pragma) and obj is not Pragma:
+                  p_type = getattr(obj, "pragma_type", "other")
+                  if p_type not in meta: meta[p_type] = []
+                  meta[p_type].append({
+                      "id": obj.arg_varname,
+                      "label": name.replace('_', ' '),
+                      "help": obj.help,
+                      "example": getattr(obj, "example", ""),
+                      "is_bool": getattr(obj, "action", "") == "store_true"
+                  })
+          
+          # Sort the types based on your PragmaTypes literal order if possible
+          # For now, we return as JSON
+          json.dumps(meta)
+        `);
+
+          const pragmaMeta = JSON.parse(pyodide.runPython("json.dumps(meta)"));
+          renderForm(pragmaMeta);
+
+          loadOverlay.style.display = "none";
+          runBtn.disabled = false;
+        } catch (err) {
+          document.getElementById("load-msg").textContent =
+            "Error: " + err.message;
+          console.error(err);
+        }
+      }
+
+      function renderForm(data) {
+        for (const [category, items] of Object.entries(data)) {
+          const section = document.createElement("div");
+          section.className = "category-section";
+
+          const title = document.createElement("div");
+          title.className = "category-title";
+          title.innerText = category.replace(/_/g, " ");
+          section.appendChild(title);
+
+          const grid = document.createElement("div");
+          grid.className = "grid-inputs";
+
+          items.forEach((item) => {
+            const field = document.createElement("div");
+            field.className = "field";
+
+            if (item.is_bool) {
+              field.style.flexDirection = "row";
+              field.style.alignItems = "center";
+              field.innerHTML = `
+                <input type="checkbox" id="${item.id}" class="slurm-val">
+                <label for="${item.id}">${item.label}</label>
+            `;
+            } else {
+              field.innerHTML = `
+                <label title="${item.help}">${item.label}</label>
+                <input type="text" id="${item.id}" class="slurm-val" placeholder="${item.example || ""}">
+            `;
+            }
+            grid.appendChild(field);
+          });
+
+          section.appendChild(grid);
+          formEl.appendChild(section);
+        }
+      }
+
+      runBtn.onclick = async () => {
+        // Initialize the nested structure your from_dict method wants
+        const nestedConfig = {
+          pragmas: {},
+          modules: [],
+          custom_commands: [],
+        };
+
+        // 1. Collect Slurm Pragmas (the dynamic textboxes)
+        document.querySelectorAll(".slurm-val").forEach((el) => {
+          if (el.type === "checkbox") {
+            if (el.checked) nestedConfig.pragmas[el.id] = "true";
+          } else if (el.value.trim() !== "") {
+            nestedConfig.pragmas[el.id] = el.value.trim();
+          }
+        });
+
+        // 2. Collect Modules & Commands (the textareas)
+        const modulesText = document.getElementById("modules").value;
+        nestedConfig.modules = modulesText
+          .split("\n")
+          .map((s) => s.trim())
+          .filter((s) => s !== "");
+
+        const commandsText = document.getElementById("custom_commands").value;
+        nestedConfig.custom_commands = commandsText
+          .split("\n")
+          .map((s) => s.trim())
+          .filter((s) => s !== "");
+
+        try {
+          // Pass the nested JS object to Pyodide
+          pyodide.globals.set("user_payload", pyodide.toPy(nestedConfig));
+
+          const scriptContent = await pyodide.runPythonAsync(`
+from slurm_script_generator.slurm_script import SlurmScript
+
+# Use your static method to rebuild the instance
+script_obj = SlurmScript.from_dict(user_payload)
+script_obj.generate_script(include_header=True)
+    `);
+
+          output.textContent = scriptContent;
+        } catch (err) {
+          output.textContent = "Error using from_dict:\n" + err;
+        }
+      };
+
+      init();
+    </script>
+  </body>
+</html>
