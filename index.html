@@ -39,17 +39,80 @@
 
       main {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        /* Start with 50/50 split with a 8px gap for the resizer */
+        grid-template-columns: 1fr 8px 1fr;
         gap: 0;
         flex: 1;
         overflow: hidden;
       }
 
-      /* Left Side: Inputs */
+      .header-links {
+        display: flex;
+        gap: 1.25rem;
+        align-items: center;
+      }
+
+      .header-link {
+        color: #64748b;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: color 0.2s;
+      }
+
+      .header-link:hover {
+        color: var(--primary);
+      }
+
+      .header-link svg {
+        width: 20px;
+        height: 20px;
+        fill: currentColor;
+      }
+
+      /* Adjust the title/version group to stay left */
+      .brand-group {
+        display: flex;
+        align-items: baseline;
+        gap: 0.75rem;
+      }
+
+      /* Remove the old border-right from #input-side */
       #input-side {
         padding: 2rem;
         overflow-y: auto;
-        border-right: 1px solid var(--border);
+        border-right: none;
+      }
+
+      /* The Draggable Divider */
+      #resizer {
+        width: 8px;
+        cursor: col-resize;
+        background: var(--border);
+        transition: background 0.2s;
+        z-index: 10;
+        position: relative;
+      }
+
+      #resizer:hover,
+      .is-dragging #resizer {
+        background: var(--primary);
+      }
+
+      /* Visual handle inside the resizer */
+      #resizer::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 2px;
+        height: 30px;
+        background: rgba(0, 0, 0, 0.1);
+        border-radius: 2px;
       }
       .category-section {
         margin-bottom: 2rem;
@@ -101,20 +164,71 @@
       }
 
       /* Right Side: Output */
+      /* Right Side: Output */
       #output-side {
         background: #0f172a;
-        padding: 2rem;
+        padding: 0; /* Changed from 2rem to 0 to allow the scrollbar to hit the edges */
         display: flex;
         flex-direction: column;
         position: relative;
+        overflow: hidden; /* Keeps the container from expanding */
       }
+
       #output {
         color: #e2e8f0;
         font-family: "Fira Code", "Consolas", monospace;
         font-size: 0.95rem;
-        white-space: pre-wrap;
+        /* Key Changes Below: */
+        white-space: pre; /* Changed from pre-wrap: strictly follows line breaks */
+        overflow: auto; /* Adds scrollbars only when needed */
         margin: 0;
+        padding: 2rem; /* Move the padding here instead of the container */
         flex: 1;
+        tab-size: 4; /* Ensures consistent indentation */
+      }
+
+      /* Custom scrollbar styling for a cleaner look on the dark background */
+      #output::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+      #output::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.02);
+      }
+      #output::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 5px;
+      }
+      #output::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      /* Container for the output area to handle button positioning */
+      #copy-btn {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        padding: 0.5rem 1rem;
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        backdrop-filter: blur(4px);
+      }
+
+      #copy-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: var(--primary);
+      }
+
+      #copy-btn.success {
+        background: #22c55e;
+        border-color: #22c55e;
+        color: white;
       }
 
       #controls {
@@ -164,10 +278,41 @@
     </div>
 
     <header>
-      <h1>SLURM SCRIPT GENERATOR</h1>
-      <span id="version-tag" style="font-size: 0.8rem; color: #64748b"
-        >v0.3.2</span
-      >
+      <div class="brand-group">
+        <h1>SLURM SCRIPT GENERATOR</h1>
+        <span id="version-tag" style="font-size: 0.8rem; color: #64748b"
+          >v0.3.2</span
+        >
+      </div>
+
+      <div class="header-links">
+        <a
+          href="https://max-models.github.io/slurm-script-generator/"
+          target="_blank"
+          class="header-link"
+          title="Documentation"
+        >
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M12,6.25L16.06,4L18.56,5.5L14.5,7.75V12.75L12,14.12L9.5,12.75V7.75L5.44,5.5L7.94,4L12,6.25M12,15.88L15.5,13.88V9.12L12,11.12L8.5,9.12V13.88L12,15.88M12,2L4.5,6.12V17.88L12,22L19.5,17.88V6.12L12,2Z"
+            />
+          </svg>
+          Docs
+        </a>
+        <a
+          href="https://github.com/max-models/slurm-script-generator"
+          target="_blank"
+          class="header-link"
+          title="GitHub Repository"
+        >
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M12,2A10,10 0 0,0 2,12C2,16.42 4.87,20.17 8.84,21.5C9.34,21.58 9.5,21.27 9.5,21.03C9.5,20.82 9.5,20.24 9.5,19.5C6.73,20.1 6.14,18.15 6.14,18.15C5.69,17 5.05,16.71 5.05,16.71C4.14,16.09 5.12,16.1 5.12,16.1C6.12,16.17 6.65,17.12 6.65,17.12C7.54,18.67 9,18.22 9.56,17.97C9.65,17.32 9.91,16.88 10.19,16.63C7.97,16.38 5.64,15.53 5.64,11.7C5.64,10.6 6.03,9.7 6.68,9C6.58,8.74 6.23,7.72 6.78,6.35C6.78,6.35 7.62,6.08 9.53,7.37C10.32,7.15 11.17,7.04 12,7.04C12.83,7.04 13.68,7.15 14.47,7.37C16.38,6.08 17.21,6.35 17.21,6.35C17.77,7.72 17.42,8.74 17.32,9C17.97,9.7 18.36,10.6 18.36,11.7C18.36,15.54 16.03,16.38 13.8,16.63C14.16,16.94 14.48,17.56 14.48,18.52C14.48,19.89 14.47,21 14.47,21.03C14.47,21.27 14.63,21.59 15.13,21.5C19.13,20.16 22,16.42 22,12A10,10 0 0,0 12,2Z"
+            />
+          </svg>
+          GitHub
+        </a>
+      </div>
     </header>
 
     <main>
@@ -197,7 +342,10 @@
         </div>
       </section>
 
+      <div id="resizer"></div>
+
       <section id="output-side">
+        <button id="copy-btn">Copy Script</button>
         <pre id="output"># Your generated script will appear here...</pre>
         <div id="controls">
           <button id="run-btn" disabled>Generate Script</button>
@@ -219,32 +367,46 @@
           await pyodide.loadPackage("micropip");
 
           await pyodide.runPythonAsync(`
-          import micropip
-          import inspect
-          import json
-          
-          # Install slurm-script-generator
-          await micropip.install("slurm-script-generator")
-          
-          from slurm_script_generator import pragmas
-          from slurm_script_generator.pragmas import Pragma
+import micropip
+import inspect
+import json
 
-          meta = {}
-          for name, obj in inspect.getmembers(pragmas):
-              if inspect.isclass(obj) and issubclass(obj, Pragma) and obj is not Pragma:
-                  p_type = getattr(obj, "pragma_type", "other")
-                  if p_type not in meta: meta[p_type] = []
-                  meta[p_type].append({
-                      "id": obj.arg_varname,
-                      "label": name.replace('_', ' '),
-                      "help": obj.help,
-                      "example": getattr(obj, "example", ""),
-                      "is_bool": getattr(obj, "action", "") == "store_true"
-                  })
-          
-          # Store result for JS to pick up
-          global_meta = json.dumps(meta)
-        `);
+# 1. Install the package from PyPI
+await micropip.install("slurm-script-generator")
+
+from slurm_script_generator.slurm_script import SlurmScript
+from slurm_script_generator import pragmas
+from slurm_script_generator.pragmas import Pragma
+
+# 2. Initialize the dictionary using the order from SlurmScript
+# We create an instance to access the _pragma_dict attribute
+ordered_keys = list(SlurmScript()._pragma_dict.keys())
+meta = {key: [] for key in ordered_keys}
+
+# 3. Populate metadata
+for name, obj in inspect.getmembers(pragmas):
+    if inspect.isclass(obj) and issubclass(obj, Pragma) and obj is not Pragma:
+        p_type = getattr(obj, "pragma_type", "other")
+        
+        # If a type exists that wasn't in your dict, add it to the end
+        if p_type not in meta:
+            meta[p_type] = []
+            
+        meta[p_type].append({
+            "id": obj.arg_varname,
+            "label": name.replace('_', ' '),
+            "help": obj.help,
+            "example": getattr(obj, "example", ""),
+            "is_bool": getattr(obj, "action", "") == "store_true"
+        })
+
+# 4. Cleanup: Remove categories that have no items (e.g., if some sections are empty)
+# This keeps the UI clean.
+meta = {k: v for k, v in meta.items() if v}
+
+# Store result for JS to pick up
+global_meta = json.dumps(meta)
+`);
 
           // Retrieve the metadata from Python
           const pragmaMeta = JSON.parse(pyodide.globals.get("global_meta"));
@@ -253,7 +415,7 @@
           loadOverlay.style.display = "none";
           runBtn.disabled = false;
         } catch (err) {
-          document.getElementById("load-msg").innerHTML = 
+          document.getElementById("load-msg").innerHTML =
             `<div style="color: #ef4444;">Failed to load from PyPI</div>
             <div style="font-size: 0.8rem;">${err.message}</div>`;
         }
@@ -342,6 +504,63 @@ script_obj.generate_script(include_header=True)
           output.textContent = scriptContent;
         } catch (err) {
           output.textContent = "Error using from_dict:\n" + err;
+        }
+      };
+
+      // --- Draggable Divider Logic ---
+      const resizer = document.getElementById("resizer");
+      const mainContainer = document.querySelector("main");
+
+      resizer.addEventListener("mousedown", (e) => {
+        document.body.classList.add("is-dragging");
+        document.addEventListener("mousemove", handleMouseMove);
+        document.addEventListener("mouseup", stopResizing);
+      });
+
+      function handleMouseMove(e) {
+        // Calculate the new width based on mouse position
+        const containerRect = mainContainer.getBoundingClientRect();
+        const newLeftWidth = e.clientX - containerRect.left;
+
+        // Set constraints (e.g., sidebars can't be smaller than 250px)
+        const minWidth = 250;
+        const maxWidth = containerRect.width - 250;
+
+        if (newLeftWidth > minWidth && newLeftWidth < maxWidth) {
+          mainContainer.style.gridTemplateColumns = `${newLeftWidth}px 8px 1fr`;
+        }
+      }
+
+      function stopResizing() {
+        document.body.classList.remove("is-dragging");
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", stopResizing);
+      }
+
+      // Button to copy output to clipboard
+      const copyBtn = document.getElementById("copy-btn");
+
+      copyBtn.onclick = async () => {
+        const content = output.textContent;
+
+        // Don't copy the placeholder text
+        if (content.startsWith("# Your generated script")) return;
+
+        try {
+          await navigator.clipboard.writeText(content);
+
+          // Visual feedback
+          const originalText = copyBtn.innerText;
+          copyBtn.innerText = "✓ Copied!";
+          copyBtn.classList.add("success");
+
+          setTimeout(() => {
+            copyBtn.innerText = originalText;
+            copyBtn.classList.remove("success");
+          }, 2000);
+        } catch (err) {
+          console.error("Failed to copy!", err);
+          alert("Failed to copy to clipboard.");
         }
       };
 
