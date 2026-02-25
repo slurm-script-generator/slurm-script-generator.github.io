@@ -1,0 +1,265 @@
+:root {
+  --primary: #4f8cff;
+  --bg: #f8fafc;
+  --card-bg: #ffffff;
+  --border: #e2e8f0;
+  --text: #0f172a;
+}
+body {
+  font-family: "Inter", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+header {
+  background: white;
+  padding: 1rem 2rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+h1 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+main {
+  display: grid;
+  /* Start with 50/50 split with a 8px gap for the resizer */
+  grid-template-columns: 1fr 8px 1fr;
+  gap: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.header-links {
+  display: flex;
+  gap: 1.25rem;
+  align-items: center;
+}
+
+.header-link {
+  color: #64748b;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.header-link:hover {
+  color: var(--primary);
+}
+
+.header-link svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+/* Adjust the title/version group to stay left */
+.brand-group {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+/* Remove the old border-right from #input-side */
+#input-side {
+  padding: 2rem;
+  overflow-y: auto;
+  border-right: none;
+}
+
+/* The Draggable Divider */
+#resizer {
+  width: 8px;
+  cursor: col-resize;
+  background: var(--border);
+  transition: background 0.2s;
+  z-index: 10;
+  position: relative;
+}
+
+#resizer:hover,
+.is-dragging #resizer {
+  background: var(--primary);
+}
+
+/* Visual handle inside the resizer */
+#resizer::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 30px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
+}
+.category-section {
+  margin-bottom: 2rem;
+}
+.category-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+}
+.grid-inputs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.field label {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+.field input,
+.field textarea {
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+.field input:focus {
+  outline: 2px solid var(--primary);
+  border-color: transparent;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+textarea {
+  min-height: 80px;
+  font-family: monospace;
+  resize: vertical;
+}
+
+/* Right Side: Output */
+/* Right Side: Output */
+#output-side {
+  background: #0f172a;
+  padding: 0; /* Changed from 2rem to 0 to allow the scrollbar to hit the edges */
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden; /* Keeps the container from expanding */
+}
+
+#output {
+  color: #e2e8f0;
+  font-family: "Fira Code", "Consolas", monospace;
+  font-size: 0.95rem;
+  /* Key Changes Below: */
+  white-space: pre; /* Changed from pre-wrap: strictly follows line breaks */
+  overflow: auto; /* Adds scrollbars only when needed */
+  margin: 0;
+  padding: 2rem; /* Move the padding here instead of the container */
+  flex: 1;
+  tab-size: 4; /* Ensures consistent indentation */
+}
+
+/* Custom scrollbar styling for a cleaner look on the dark background */
+#output::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+#output::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+}
+#output::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+}
+#output::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Container for the output area to handle button positioning */
+#copy-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  backdrop-filter: blur(4px);
+}
+
+#copy-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: var(--primary);
+}
+
+#copy-btn.success {
+  background: #22c55e;
+  border-color: #22c55e;
+  color: white;
+}
+
+#controls {
+  position: sticky;
+  bottom: 2rem;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  pointer-events: none;
+}
+#run-btn {
+  pointer-events: auto;
+  padding: 0.75rem 2.5rem;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 99px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 10px 15px -3px rgba(79, 140, 255, 0.4);
+  transition: transform 0.2s;
+}
+#run-btn:hover {
+  transform: translateY(-2px);
+  background: #3b82f6;
+}
+#run-btn:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+#loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: white;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
