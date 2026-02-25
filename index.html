@@ -218,20 +218,13 @@
           pyodide = await loadPyodide();
           await pyodide.loadPackage("micropip");
 
-          // 1. Calculate the URL in JS
-          const wheelName = "slurm_script_generator-0.3.2-py3-none-any.whl";
-          const wheelUrl = `${window.location.origin}${window.location.pathname.replace("index.html", "")}dist/${wheelName}`;
-
-          // 2. Pass the URL into the Python global scope
-          pyodide.globals.set("WHEEL_URL", wheelUrl);
-
           await pyodide.runPythonAsync(`
           import micropip
           import inspect
           import json
           
-          # 3. Use the variable passed from JS
-          await micropip.install(WHEEL_URL)
+          # Install slurm-script-generator
+          await micropip.install("slurm-script-generator")
           
           from slurm_script_generator import pragmas
           from slurm_script_generator.pragmas import Pragma
