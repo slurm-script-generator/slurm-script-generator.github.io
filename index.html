@@ -130,20 +130,43 @@
       }
 
       /* Right Side: Output */
+      /* Right Side: Output */
       #output-side {
         background: #0f172a;
-        padding: 2rem;
+        padding: 0; /* Changed from 2rem to 0 to allow the scrollbar to hit the edges */
         display: flex;
         flex-direction: column;
         position: relative;
+        overflow: hidden; /* Keeps the container from expanding */
       }
+
       #output {
         color: #e2e8f0;
         font-family: "Fira Code", "Consolas", monospace;
         font-size: 0.95rem;
-        white-space: pre-wrap;
+        /* Key Changes Below: */
+        white-space: pre; /* Changed from pre-wrap: strictly follows line breaks */
+        overflow: auto; /* Adds scrollbars only when needed */
         margin: 0;
+        padding: 2rem; /* Move the padding here instead of the container */
         flex: 1;
+        tab-size: 4; /* Ensures consistent indentation */
+      }
+
+      /* Custom scrollbar styling for a cleaner look on the dark background */
+      #output::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+      #output::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.02);
+      }
+      #output::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 5px;
+      }
+      #output::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.2);
       }
 
       /* Container for the output area to handle button positioning */
