@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - deploy-on-github-pages
   workflow_dispatch:
 
 permissions:
