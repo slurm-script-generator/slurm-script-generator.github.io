@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - fix-webpage
   workflow_dispatch:
 
 permissions:
