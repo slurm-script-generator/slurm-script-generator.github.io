@@ -39,17 +39,46 @@
 
       main {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        /* Start with 50/50 split with a 8px gap for the resizer */
+        grid-template-columns: 1fr 8px 1fr;
         gap: 0;
         flex: 1;
         overflow: hidden;
       }
 
-      /* Left Side: Inputs */
+      /* Remove the old border-right from #input-side */
       #input-side {
         padding: 2rem;
         overflow-y: auto;
-        border-right: 1px solid var(--border);
+        border-right: none;
+      }
+
+      /* The Draggable Divider */
+      #resizer {
+        width: 8px;
+        cursor: col-resize;
+        background: var(--border);
+        transition: background 0.2s;
+        z-index: 10;
+        position: relative;
+      }
+
+      #resizer:hover,
+      .is-dragging #resizer {
+        background: var(--primary);
+      }
+
+      /* Visual handle inside the resizer */
+      #resizer::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 2px;
+        height: 30px;
+        background: rgba(0, 0, 0, 0.1);
+        border-radius: 2px;
       }
       .category-section {
         margin-bottom: 2rem;
@@ -196,6 +225,8 @@
           </div>
         </div>
       </section>
+
+      <div id="resizer"></div>
 
       <section id="output-side">
         <pre id="output"># Your generated script will appear here...</pre>
@@ -358,6 +389,36 @@ script_obj.generate_script(include_header=True)
           output.textContent = "Error using from_dict:\n" + err;
         }
       };
+
+      // --- Draggable Divider Logic ---
+      const resizer = document.getElementById("resizer");
+      const mainContainer = document.querySelector("main");
+
+      resizer.addEventListener("mousedown", (e) => {
+        document.body.classList.add("is-dragging");
+        document.addEventListener("mousemove", handleMouseMove);
+        document.addEventListener("mouseup", stopResizing);
+      });
+
+      function handleMouseMove(e) {
+        // Calculate the new width based on mouse position
+        const containerRect = mainContainer.getBoundingClientRect();
+        const newLeftWidth = e.clientX - containerRect.left;
+
+        // Set constraints (e.g., sidebars can't be smaller than 250px)
+        const minWidth = 250;
+        const maxWidth = containerRect.width - 250;
+
+        if (newLeftWidth > minWidth && newLeftWidth < maxWidth) {
+          mainContainer.style.gridTemplateColumns = `${newLeftWidth}px 8px 1fr`;
+        }
+      }
+
+      function stopResizing() {
+        document.body.classList.remove("is-dragging");
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", stopResizing);
+      }
 
       init();
     </script>
