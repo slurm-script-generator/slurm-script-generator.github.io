@@ -12,15 +12,13 @@ async function init() {
 
     await pyodide.runPythonAsync(`
 import micropip
-import inspect
 import json
 
 # 1. Install the package from PyPI
-await micropip.install("slurm-script-generator")
+await micropip.install("slurm-script-generator==0.4.0")
 
 from slurm_script_generator.slurm_script import SlurmScript
-from slurm_script_generator import pragmas
-from slurm_script_generator.pragmas import Pragma
+from slurm_script_generator.pragmas import PragmaFactory
 
 # 2. Initialize the dictionary using the order from SlurmScript
 # We create an instance to access the _pragma_dict attribute
@@ -28,21 +26,20 @@ ordered_keys = list(SlurmScript()._pragma_dict.keys())
 meta = {key: [] for key in ordered_keys}
 
 # 3. Populate metadata
-for name, obj in inspect.getmembers(pragmas):
-    if inspect.isclass(obj) and issubclass(obj, Pragma) and obj is not Pragma:
-        p_type = getattr(obj, "pragma_type", "other")
-        
-        # If a type exists that wasn't in your dict, add it to the end
-        if p_type not in meta:
-            meta[p_type] = []
-            
-        meta[p_type].append({
-            "id": obj.arg_varname,
-            "label": name.replace('_', ' '),
-            "help": obj.help,
-            "example": getattr(obj, "example", ""),
-            "is_bool": getattr(obj, "action", "") == "store_true"
-        })
+for obj in PragmaFactory.pragmas.values():
+    p_type = obj.pragma_type
+
+    # If a type exists that wasn't in your dict, add it to the end
+    if p_type not in meta:
+        meta[p_type] = []
+
+    meta[p_type].append({
+        "id": obj.arg_varname,
+        "label": obj.__name__.replace('_', ' '),
+        "help": obj.help,
+        "example": getattr(obj, "example", ""),
+        "is_bool": getattr(obj, "action", "") == "store_true"
+    })
 
 # 4. Cleanup: Remove categories that have no items (e.g., if some sections are empty)
 # This keeps the UI clean.
