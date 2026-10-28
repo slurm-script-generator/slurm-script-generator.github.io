@@ -14,7 +14,7 @@ async function init() {
 import micropip
 import json
 
-# 1. Install the package from PyPI
+# 1. Install the same package version used by the deployed site.
 await micropip.install("slurm-script-generator==0.4.0")
 
 from slurm_script_generator.slurm_script import SlurmScript
@@ -25,7 +25,9 @@ from slurm_script_generator.pragmas import PragmaFactory
 ordered_keys = list(SlurmScript()._pragma_dict.keys())
 meta = {key: [] for key in ordered_keys}
 
-# 3. Populate metadata
+# 3. Populate metadata from registered, user-facing pragma classes.
+# Do not inspect the module: helper classes such as UnknownPragma are not
+# regular CLI fields and do not have all of the metadata below.
 for obj in PragmaFactory.pragmas.values():
     p_type = obj.pragma_type
 
@@ -63,6 +65,9 @@ global_meta = json.dumps(meta)
 }
 
 function renderForm(data) {
+  formEl.replaceChildren();
+  const usedKeys = new Set();
+
   for (const [category, items] of Object.entries(data)) {
     const section = document.createElement("div");
     section.className = "category-section";
@@ -76,21 +81,40 @@ function renderForm(data) {
     grid.className = "grid-inputs";
 
     items.forEach((item) => {
+      if (usedKeys.has(item.id)) {
+        throw new Error(`Duplicate pragma key: ${item.id}`);
+      }
+      usedKeys.add(item.id);
+
       const field = document.createElement("div");
       field.className = "field";
+      const inputId = `slurm-${item.id}`;
+      const label = document.createElement("label");
+      label.htmlFor = inputId;
+      label.textContent = item.label;
 
       if (item.is_bool) {
         field.style.flexDirection = "row";
         field.style.alignItems = "center";
-        field.innerHTML = `
-                <input type="checkbox" id="${item.id}" class="slurm-val">
-                <label for="${item.id}">${item.label}</label>
-            `;
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.id = inputId;
+        input.name = inputId;
+        input.className = "slurm-val";
+        input.dataset.pragmaKey = item.id;
+        input.autocomplete = "off";
+        field.append(input, label);
       } else {
-        field.innerHTML = `
-                <label title="${item.help}">${item.label}</label>
-                <input type="text" id="${item.id}" class="slurm-val" placeholder="${item.example || ""}">
-            `;
+        label.title = item.help;
+        const input = document.createElement("input");
+        input.type = "text";
+        input.id = inputId;
+        input.name = inputId;
+        input.className = "slurm-val";
+        input.dataset.pragmaKey = item.id;
+        input.placeholder = item.example || "";
+        input.autocomplete = "off";
+        field.append(label, input);
       }
       grid.appendChild(field);
     });
@@ -110,10 +134,11 @@ runBtn.onclick = async () => {
 
   // 1. Collect Slurm Pragmas (the dynamic textboxes)
   document.querySelectorAll(".slurm-val").forEach((el) => {
+    const pragmaKey = el.dataset.pragmaKey;
     if (el.type === "checkbox") {
-      if (el.checked) nestedConfig.pragmas[el.id] = "true";
+      if (el.checked) nestedConfig.pragmas[pragmaKey] = "true";
     } else if (el.value.trim() !== "") {
-      nestedConfig.pragmas[el.id] = el.value.trim();
+      nestedConfig.pragmas[pragmaKey] = el.value.trim();
     }
   });
 
